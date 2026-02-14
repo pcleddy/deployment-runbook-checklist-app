@@ -14,6 +14,14 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000`.
 
+## GitHub Pages
+
+After pushing to `main`, GitHub Actions deploys this app to Pages.
+
+Expected URL:
+
+`https://pcleddy.github.io/deployment-runbook-checklist-app/`
+
 ## What It Does
 
 - Takes markdown with headings and nested list items.
