@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markdown Deployment Checklist</title>
+    <style>
+      :root {
+        --ink: #102129;
+        --muted: #6b7a80;
+        --paper: #f5f5ee;
+        --paper-alt: #eceadf;
+        --line: #d1ccba;
+        --accent: #147a5b;
+        --accent-soft: #e0f0ea;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+        background:
+          radial-gradient(1200px 600px at 0% 0%, #fffef7 0%, transparent 50%),
+          radial-gradient(1000px 500px at 100% 100%, #e8f5ef 0%, transparent 45%),
+          linear-gradient(150deg, var(--paper) 0%, var(--paper-alt) 100%);
+        min-height: 100vh;
+      }
+
+      .app {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px 18px 40px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: clamp(1.45rem, 2.7vw, 2.2rem);
+        letter-spacing: 0.03em;
+      }
+
+      .subtitle {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .layout.input-hidden {
+        grid-template-columns: 1fr;
+      }
+
+      .layout.input-hidden #inputCard {
+        display: none;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(2px);
+        padding: 14px;
+        box-shadow: 0 3px 20px rgba(16, 33, 41, 0.05);
+      }
+
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 62vh;
+        resize: vertical;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        padding: 12px;
+        color: var(--ink);
+        background: #fffef8;
+        font: 0.95rem/1.4 "Courier Prime", "Courier New", monospace;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      button {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font: 600 0.85rem/1.2 "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #fff;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+
+      button:hover {
+        filter: brightness(0.95);
+      }
+
+      #checklist {
+        min-height: 62vh;
+        overflow: auto;
+      }
+
+      #checklist h1,
+      #checklist h2,
+      #checklist h3,
+      #checklist h4,
+      #checklist h5,
+      #checklist h6 {
+        margin: 12px 0 8px;
+        line-height: 1.25;
+      }
+
+      #checklist ul {
+        list-style: none;
+        padding-left: 1.05rem;
+        margin: 8px 0;
+        border-left: 1px dashed rgba(16, 33, 41, 0.2);
+      }
+
+      #checklist li {
+        margin: 7px 0;
+      }
+
+      .task {
+        display: inline-flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 2px 4px;
+        border-radius: 8px;
+      }
+
+      .task:hover {
+        background: var(--accent-soft);
+      }
+
+      input[type="checkbox"] {
+        margin-top: 0.2em;
+        accent-color: var(--accent);
+      }
+
+      .help {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        textarea,
+        #checklist {
+          min-height: 44vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1 class="title">Deployment Runbook Checklist</h1>
+        <p class="subtitle">
+          Paste markdown outline steps. Checkbox and markdown state are saved in this browser.
+        </p>
+      </header>
+
+      <section class="layout" id="layout">
+        <article class="card" id="inputCard">
+          <h2>Markdown Input</h2>
+          <textarea id="source" spellcheck="false">
+# Test Deployment
+
+## Pre-checks
+- Confirm target branch is tagged
+- Confirm DB migration window is approved
+- Confirm rollback package exists
+
+## Deployment
+- Put test environment in maintenance mode
+  - Notify QA and release channel
+  - Verify no active sessions
+- Deploy app artifacts
+  - Upload package
+  - Restart service
+- Run migrations
+
+## Validation
+- Smoke tests
+  - API health endpoint returns 200
+  - User login works
+- Check metrics for 15 minutes
+
+## Finish
+- Disable maintenance mode
+- Post deployment summary in release channel
+          </textarea>
+          <div class="controls">
+            <button id="renderBtn" type="button">Render Checklist</button>
+            <button id="clearChecksBtn" class="secondary" type="button">Clear Checks</button>
+          </div>
+          <p class="help">Supported markdown: headings (`#`) and nested `-`, `*`, `+`, or numbered list items.</p>
+        </article>
+
+        <article class="card">
+          <h2>Interactive Checklist</h2>
+          <div class="controls">
+            <button id="toggleInputBtn" class="secondary" type="button">Hide Input</button>
+          </div>
+          <div id="checklist"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const source = document.getElementById("source");
+      const layout = document.getElementById("layout");
+      const checklist = document.getElementById("checklist");
+      const renderBtn = document.getElementById("renderBtn");
+      const clearChecksBtn = document.getElementById("clearChecksBtn");
+      const toggleInputBtn = document.getElementById("toggleInputBtn");
+
+      const STORAGE_KEYS = {
+        source: "mdChecklist.source",
+        checks: "mdChecklist.checks",
+        inputHidden: "mdChecklist.inputHidden"
+      };
+
+      const DEFAULT_MARKDOWN = source.value.trim();
+      let checkState = loadJson(STORAGE_KEYS.checks, {});
+      let inputHidden = false;
+
+      if (!checkState || typeof checkState !== "object" || Array.isArray(checkState)) {
+        checkState = {};
+      }
+
+      const savedSource = loadText(STORAGE_KEYS.source);
+      source.value = savedSource !== null ? savedSource : DEFAULT_MARKDOWN;
+
+      function loadText(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      }
+
+      function saveText(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {
+          // Ignore storage failures (private mode/quota).
+        }
+      }
+
+      function loadJson(key, fallback) {
+        const raw = loadText(key);
+        if (raw === null) return fallback;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJson(key, value) {
+        saveText(key, JSON.stringify(value));
+      }
+
+      function loadBool(key, fallback) {
+        const raw = loadText(key);
+        if (raw === null) return fallback;
+        return raw === "1";
+      }
+
+      function hashText(text) {
+        let hash = 2166136261;
+        for (let i = 0; i < text.length; i += 1) {
+          hash ^= text.charCodeAt(i);
+          hash +=
+            (hash << 1) +
+            (hash << 4) +
+            (hash << 7) +
+            (hash << 8) +
+            (hash << 24);
+        }
+        return (hash >>> 0).toString(36);
+      }
+
+      function escapeHtml(text) {
+        const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+        return text.replace(/[&<>"']/g, (ch) => map[ch]);
+      }
+
+      function parseMarkdown(md) {
+        const lines = md.replace(/\r\n/g, "\n").split("\n");
+        const blocks = [];
+        let currentList = [];
+
+        function flushList() {
+          if (currentList.length) {
+            blocks.push({ type: "list", items: currentList });
+            currentList = [];
+          }
+        }
+
+        for (const rawLine of lines) {
+          const line = rawLine.replace(/\t/g, "  ");
+
+          const headingMatch = line.match(/^\s*(#{1,6})\s+(.+?)\s*$/);
+          if (headingMatch) {
+            flushList();
+            blocks.push({
+              type: "heading",
+              level: headingMatch[1].length,
+              text: headingMatch[2]
+            });
+            continue;
+          }
+
+          const itemMatch = line.match(/^(\s*)(?:[-+*]|\d+\.)\s+(.+?)\s*$/);
+          if (itemMatch) {
+            const indent = itemMatch[1].length;
+            let text = itemMatch[2];
+            let checked = false;
+            const checkboxMatch = text.match(/^\[( |x|X)\]\s+(.+)$/);
+            if (checkboxMatch) {
+              checked = checkboxMatch[1].toLowerCase() === "x";
+              text = checkboxMatch[2];
+            }
+            currentList.push({ indent, text, checked });
+            continue;
+          }
+
+          if (!line.trim()) {
+            flushList();
+            continue;
+          }
+
+          flushList();
+          blocks.push({ type: "paragraph", text: line.trim() });
+        }
+
+        flushList();
+        return blocks;
+      }
+
+      function buildList(items) {
+        const root = [];
+        const stack = [{ indent: -1, children: root }];
+
+        for (const item of items) {
+          while (stack.length > 1 && item.indent <= stack[stack.length - 1].indent) {
+            stack.pop();
+          }
+
+          const node = {
+            text: item.text,
+            checked: item.checked,
+            children: []
+          };
+          stack[stack.length - 1].children.push(node);
+          stack.push({ indent: item.indent, children: node.children });
+        }
+
+        return root;
+      }
+
+      function renderTree(nodes, path, validIds) {
+        if (!nodes.length) return "";
+        const parts = ["<ul>"];
+
+        for (let i = 0; i < nodes.length; i += 1) {
+          const node = nodes[i];
+          const nodePath = path.concat(i + 1);
+          const taskId = `task-${nodePath.join("-")}-${hashText(node.text)}`;
+          validIds.add(taskId);
+          const checked =
+            Object.prototype.hasOwnProperty.call(checkState, taskId) ? checkState[taskId] : node.checked;
+
+          parts.push("<li>");
+          parts.push(
+            `<label class="task"><input type="checkbox" data-task-id="${taskId}"${checked ? " checked" : ""}><span>${escapeHtml(node.text)}</span></label>`
+          );
+          parts.push(renderTree(node.children, nodePath, validIds));
+          parts.push("</li>");
+        }
+
+        parts.push("</ul>");
+        return parts.join("");
+      }
+
+      function renderChecklist() {
+        const blocks = parseMarkdown(source.value);
+        const html = [];
+        const validIds = new Set();
+
+        for (const block of blocks) {
+          if (block.type === "heading") {
+            html.push(`<h${block.level}>${escapeHtml(block.text)}</h${block.level}>`);
+            continue;
+          }
+
+          if (block.type === "list") {
+            html.push(renderTree(buildList(block.items), [], validIds));
+            continue;
+          }
+
+          html.push(`<p>${escapeHtml(block.text)}</p>`);
+        }
+
+        checklist.innerHTML = html.join("") || "<p>No checklist items found.</p>";
+
+        let pruned = false;
+        for (const key of Object.keys(checkState)) {
+          if (!validIds.has(key)) {
+            delete checkState[key];
+            pruned = true;
+          }
+        }
+        if (pruned) {
+          saveJson(STORAGE_KEYS.checks, checkState);
+        }
+      }
+
+      function clearChecks() {
+        checklist.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.checked = false;
+          if (cb.dataset.taskId) {
+            checkState[cb.dataset.taskId] = false;
+          }
+        });
+        saveJson(STORAGE_KEYS.checks, checkState);
+      }
+
+      function setInputHidden(hidden, persist = true) {
+        inputHidden = hidden;
+        layout.classList.toggle("input-hidden", hidden);
+        toggleInputBtn.textContent = hidden ? "Show Input" : "Hide Input";
+        if (persist) {
+          saveText(STORAGE_KEYS.inputHidden, hidden ? "1" : "0");
+        }
+      }
+
+      renderBtn.addEventListener("click", () => {
+        saveText(STORAGE_KEYS.source, source.value);
+        renderChecklist();
+        setInputHidden(true);
+      });
+      clearChecksBtn.addEventListener("click", clearChecks);
+      toggleInputBtn.addEventListener("click", () => {
+        setInputHidden(!inputHidden);
+      });
+      source.addEventListener("input", () => {
+        saveText(STORAGE_KEYS.source, source.value);
+        renderChecklist();
+      });
+      checklist.addEventListener("change", (event) => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement && target.type === "checkbox" && target.dataset.taskId) {
+          checkState[target.dataset.taskId] = target.checked;
+          saveJson(STORAGE_KEYS.checks, checkState);
+        }
+      });
+
+      setInputHidden(loadBool(STORAGE_KEYS.inputHidden, false), false);
+      renderChecklist();
+    </script>
+  </body>
+</html>
