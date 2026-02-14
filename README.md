@@ -16,7 +16,7 @@ Then visit `http://localhost:8000`.
 
 ## GitHub Pages
 
-After pushing to `main`, GitHub Actions deploys this app to Pages.
+GitHub Pages is configured to publish directly from the branch selected in repo settings.
 
 Expected URL:
 
