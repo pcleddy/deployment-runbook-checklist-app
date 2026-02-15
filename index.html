@@ -185,6 +185,92 @@
         outline-offset: -1px;
       }
 
+      .saved-drawer {
+        margin-bottom: 10px;
+      }
+
+      .saved-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        padding: 4px 0;
+        color: var(--muted);
+        font: 600 0.82rem/1.2 "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+      }
+
+      .saved-toggle:hover {
+        color: var(--ink);
+        filter: none;
+      }
+
+      .saved-toggle .arrow {
+        display: inline-block;
+        transition: transform 0.15s ease;
+        font-size: 0.7rem;
+      }
+
+      .saved-toggle.open .arrow {
+        transform: rotate(90deg);
+      }
+
+      .saved-list {
+        margin: 6px 0 0;
+        padding: 0;
+        list-style: none;
+        border-left: 1px dashed rgba(16, 33, 41, 0.2);
+        padding-left: 10px;
+      }
+
+      .saved-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 6px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+
+      .saved-item:hover {
+        background: var(--accent-soft);
+      }
+
+      .saved-item-title {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+      }
+
+      .saved-item-date {
+        color: var(--muted);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+      }
+
+      .saved-item-delete {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 4px;
+        font-size: 1rem;
+        line-height: 1;
+        border-radius: 4px;
+      }
+
+      .saved-item-delete:hover {
+        color: #c0392b;
+        background: rgba(192, 57, 43, 0.08);
+        filter: none;
+      }
+
       .help {
         margin-top: 10px;
         color: var(--muted);
@@ -221,6 +307,12 @@
             </select>
             <button id="loadTemplateBtn" type="button">Load</button>
           </div>
+          <div class="saved-drawer" id="savedDrawer" style="display:none;">
+            <button class="saved-toggle" id="savedToggle" type="button">
+              <span class="arrow">&#9654;</span> <span id="savedLabel">Saved (0)</span>
+            </button>
+            <ul class="saved-list" id="savedList" style="display:none;"></ul>
+          </div>
           <textarea id="source" spellcheck="false">
 # Test Deployment
 
@@ -251,6 +343,7 @@
           <div class="controls">
             <button id="renderBtn" type="button">Render Checklist</button>
             <button id="clearChecksBtn" class="secondary" type="button">Clear Checks</button>
+            <button id="saveBtn" class="secondary" type="button">Save</button>
           </div>
           <p class="help">Supported markdown: headings (`#`) and nested `-`, `*`, `+`, or numbered list items.</p>
         </article>
@@ -276,7 +369,9 @@
       const STORAGE_KEYS = {
         source: "mdChecklist.source",
         checks: "mdChecklist.checks",
-        inputHidden: "mdChecklist.inputHidden"
+        inputHidden: "mdChecklist.inputHidden",
+        saved: "mdChecklist.saved",
+        drawerOpen: "mdChecklist.drawerOpen"
       };
 
       const DEFAULT_MARKDOWN = source.value.trim();
@@ -515,6 +610,111 @@
           saveJson(STORAGE_KEYS.checks, checkState);
         }
       });
+
+      // --- Saved Checklists ---
+      const savedDrawer = document.getElementById("savedDrawer");
+      const savedToggle = document.getElementById("savedToggle");
+      const savedLabel = document.getElementById("savedLabel");
+      const savedList = document.getElementById("savedList");
+      const saveBtn = document.getElementById("saveBtn");
+      const MAX_SAVED = 10;
+
+      function getSaved() {
+        const arr = loadJson(STORAGE_KEYS.saved, []);
+        return Array.isArray(arr) ? arr : [];
+      }
+
+      function putSaved(arr) {
+        saveJson(STORAGE_KEYS.saved, arr);
+      }
+
+      function extractTitle(md) {
+        const m = md.match(/^#\s+(.+)/m);
+        return m ? m[1].trim() : "Untitled";
+      }
+
+      function relativeTime(ts) {
+        const diff = Date.now() - ts;
+        const sec = Math.floor(diff / 1000);
+        if (sec < 60) return "just now";
+        const min = Math.floor(sec / 60);
+        if (min < 60) return min + " min ago";
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return hr + "h ago";
+        const days = Math.floor(hr / 24);
+        if (days === 1) return "yesterday";
+        if (days < 30) return days + "d ago";
+        return new Date(ts).toLocaleDateString();
+      }
+
+      function renderSavedList() {
+        const items = getSaved();
+        savedDrawer.style.display = items.length ? "" : "none";
+        savedLabel.textContent = "Saved (" + items.length + ")";
+        savedList.innerHTML = "";
+        for (const item of items) {
+          const li = document.createElement("li");
+          li.className = "saved-item";
+          li.innerHTML =
+            '<span class="saved-item-title">' + escapeHtml(item.title) + "</span>" +
+            '<span class="saved-item-date">' + relativeTime(item.savedAt) + "</span>" +
+            '<button class="saved-item-delete" type="button" title="Delete">&times;</button>';
+          li.querySelector(".saved-item-title").addEventListener("click", () => {
+            source.value = item.content;
+            saveText(STORAGE_KEYS.source, source.value);
+            checkState = {};
+            saveJson(STORAGE_KEYS.checks, checkState);
+            renderChecklist();
+          });
+          li.querySelector(".saved-item-delete").addEventListener("click", (e) => {
+            e.stopPropagation();
+            const updated = getSaved().filter((s) => s.id !== item.id);
+            putSaved(updated);
+            renderSavedList();
+          });
+          savedList.appendChild(li);
+        }
+      }
+
+      saveBtn.addEventListener("click", () => {
+        const content = source.value.trim();
+        if (!content) return;
+        let items = getSaved();
+        const dupeIdx = items.findIndex((s) => s.content.trim() === content);
+        if (dupeIdx !== -1) {
+          items[dupeIdx].savedAt = Date.now();
+          items[dupeIdx].title = extractTitle(content);
+          const moved = items.splice(dupeIdx, 1)[0];
+          items.unshift(moved);
+        } else {
+          items.unshift({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            title: extractTitle(content),
+            content: content,
+            savedAt: Date.now()
+          });
+          if (items.length > MAX_SAVED) items = items.slice(0, MAX_SAVED);
+        }
+        putSaved(items);
+        renderSavedList();
+        // Brief visual feedback
+        saveBtn.textContent = "Saved!";
+        setTimeout(() => { saveBtn.textContent = "Save"; }, 800);
+      });
+
+      let drawerOpen = loadBool(STORAGE_KEYS.drawerOpen, false);
+      savedToggle.addEventListener("click", () => {
+        drawerOpen = !drawerOpen;
+        savedList.style.display = drawerOpen ? "" : "none";
+        savedToggle.classList.toggle("open", drawerOpen);
+        saveText(STORAGE_KEYS.drawerOpen, drawerOpen ? "1" : "0");
+      });
+      // Restore drawer state
+      if (drawerOpen) {
+        savedList.style.display = "";
+        savedToggle.classList.add("open");
+      }
+      renderSavedList();
 
       // --- Template Picker ---
       const TEMPLATES = {
