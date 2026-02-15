@@ -312,7 +312,7 @@ function renderSavedList() {
     li.querySelector(".saved-item-title").addEventListener("click", () => {
       source.value = item.content;
       saveText(STORAGE_KEYS.source, source.value);
-      checkState = {};
+      checkState = (item.checks && typeof item.checks === "object") ? Object.assign({}, item.checks) : {};
       saveJson(STORAGE_KEYS.checks, checkState);
       renderChecklist();
     });
@@ -334,6 +334,7 @@ saveBtn.addEventListener("click", () => {
   if (dupeIdx !== -1) {
     items[dupeIdx].savedAt = Date.now();
     items[dupeIdx].title = extractTitle(content);
+    items[dupeIdx].checks = Object.assign({}, checkState);
     const moved = items.splice(dupeIdx, 1)[0];
     items.unshift(moved);
   } else {
@@ -341,6 +342,7 @@ saveBtn.addEventListener("click", () => {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title: extractTitle(content),
       content: content,
+      checks: Object.assign({}, checkState),
       savedAt: Date.now()
     });
     if (items.length > MAX_SAVED) items = items.slice(0, MAX_SAVED);
